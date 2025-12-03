@@ -1,0 +1,77 @@
+/* Dark minimal glassmorphism dashboard styles */
+:root{
+  --bg: #0b0e12;
+  --surface: rgba(255,255,255,0.03);
+  --surface-2: rgba(255,255,255,0.02);
+  --text: #e7eef6;
+  --muted: #9aa3ad;
+  --accent: #6bdc86; /* hint of green */
+  --glass-border: rgba(255,255,255,0.06);
+  --radius: 12px;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+body{background:linear-gradient(180deg,var(--bg),#071017);color:var(--text);-webkit-font-smoothing:antialiased}
+
+.app{min-height:100vh;display:flex;flex-direction:column}
+
+/* Nav */
+.navbar{position:sticky;top:18px;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;margin:0 auto;max-width:1200px;border-radius:999px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--glass-border);box-shadow:0 6px 22px rgba(2,7,12,0.6)}
+.nav-left{display:flex;align-items:center;gap:12px}
+.menu-button{background:transparent;border:0;color:var(--text);font-size:1.1rem;padding:8px;border-radius:8px}
+.brand{font-weight:700;font-family:Poppins,Inter,sans-serif;letter-spacing:0.03em}
+
+.nav-center{display:flex;flex:1;justify-content:center}
+.nav-links{display:flex;gap:18px}
+.nav-links a{color:var(--muted);text-decoration:none;font-weight:600;padding:6px 10px;border-radius:8px}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,0.02)}
+
+.nav-right{display:flex;align-items:center;gap:8px}
+.icon-button{background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--text);padding:8px;border-radius:8px;cursor:pointer}
+
+/* Container & Grid */
+.container{max-width:1200px;margin:30px auto;padding:0 24px}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:minmax(120px,auto);gap:20px}
+.card{grid-column:span 4;background:linear-gradient(180deg,var(--surface),var(--surface-2));border-radius:var(--radius);border:1px solid var(--glass-border);padding:18px;display:flex;flex-direction:column;min-height:140px;box-shadow:0 8px 30px rgba(2,6,10,0.55)}
+.card.large{grid-column:span 8}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-header h3{margin:0;font-size:1.05rem}
+.card-body{flex:1}
+.muted{color:var(--muted);font-size:0.95rem}
+.row{display:flex;gap:16px;margin-top:12px}
+.metric{background:transparent;padding:10px;display:flex;flex-direction:column;gap:6px}
+.metric-value{font-size:1.25rem;font-weight:700}
+.metric-label{font-size:0.8rem;color:var(--muted)}
+
+/* controls */
+.controls{display:flex;gap:10px}
+.btn{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer}
+.btn.ghost{background:transparent;border:1px dashed rgba(255,255,255,0.04)}
+
+/* Activity list */
+.activity-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.activity-list li{background:transparent;padding:8px;border-radius:8px;color:var(--muted)}
+
+/* Sparkline placeholder */
+.sparkline-placeholder{height:70px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.02));border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+/* Micro sparkline bars (small inline bars) */
+.sparkline-placeholder{display:flex;gap:4px;padding:6px;align-items:end}
+.spark-bar{width:6px;background:linear-gradient(180deg,var(--accent),rgba(255,255,255,0.08));border-radius:3px}
+
+/* Buttons and small misc */
+.card-actions .icon-button{padding:6px}
+
+/* Responsiveness */
+@media (max-width:900px){
+  .grid{grid-template-columns:repeat(6,1fr)}
+  .card{grid-column:span 6}
+  .card.large{grid-column:span 6}
+  .nav-center{display:none}
+}
+@media (max-width:520px){
+  .grid{grid-template-columns:repeat(1,1fr)}
+  .card{grid-column:span 1}
+  .card.large{grid-column:span 1}
+  .navbar{padding:12px}
+}

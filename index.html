@@ -1,11 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <h4>Hello</h4>
-</body>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Minimal Dashboard</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="css/style.css" />
+    </head>
+    <body>
+        <div class="app">
+            <header class="navbar" role="navigation" aria-label="Main navigation">
+                <div class="nav-left">
+                    <button class="menu-button" aria-label="Open menu">☰</button>
+                    <span class="brand">rg-dash</span>
+                </div>
+                <div class="nav-center">
+                    <nav class="nav-links" aria-label="Primary">
+                        <a href="#overview">Overview</a>
+                        <a href="history.html">History Lesson</a>
+                        <a href="#activity">Activity</a>
+                    </nav>
+                </div>
+                <div class="nav-right">
+                    <button id="theme-toggle" class="icon-button" aria-label="Toggle theme">🌙</button>
+                </div>
+            </header>
+
+            <main class="container">
+                <div class="grid">
+                    <section class="card" id="overview" aria-labelledby="overview-title">
+                        <div class="card-header">
+                            <h3 id="overview-title">Overview</h3>
+                            <div class="card-actions"><button class="icon-button">⤴︎</button></div>
+                        </div>
+                        <div class="card-body">
+                            <p class="muted">Snapshot of system health and quick stats.</p>
+                            <div class="row">
+                                <div class="metric">
+                                    <div class="metric-value" data-metric="activeUsers">128</div>
+                                    <div class="metric-label">Active Users</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value" data-metric="newSignups">24</div>
+                                    <div class="metric-label">No Idea Why you look here</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value" data-metric="avgResponse">3.4s</div>
+                                    <div class="metric-label">Avg Response</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="card" id="stats" aria-labelledby="stats-title">
+                        <div class="card-header">
+                            <h3 id="stats-title">Usage</h3>
+                            <div class="card-actions"><button id="refresh-stats" class="icon-button">↻</button></div>
+                        </div>
+                        <div class="card-body">
+                            <p class="muted">Key usage stats for this hour.</p>
+                            <div class="sparkline-placeholder" id="sparkline">[sparkline]</div>
+                        </div>
+                    </section>
+
+                    <section class="card" id="activity" aria-labelledby="activity-title">
+                        <div class="card-header">
+                            <h3 id="activity-title">Recent Activity</h3>
+                        </div>
+                        <div class="card-body">
+                            <ul id="activity-list" class="activity-list">
+                                <li>🟢 User h3llo added a new board</li>
+                                <li>🟡 Backup scheduled</li>
+                                <li>🔴 please send me back to california</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section class="card large" id="details">
+                        <div class="card-header">
+                            <h3>Quick Controls</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="controls">
+                                <button class="btn">Create Item</button>
+                                <button class="btn ghost">Export</button>
+                                <button class="btn">Settings</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+
+        <script src="js/dashboard.js" defer></script>
+    </body>
 </html>

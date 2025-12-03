@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Audio Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 25px;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .control-btn.active {
+            background: rgba(64, 224, 208, 0.3);
+            border: 1px solid rgba(64, 224, 208, 0.5);
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .slider {
+            width: 100px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+            border-radius: 5px;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #40e0d0;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            background: #40e0d0;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        
+        .info-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 200px;
+        }
+        
+        .info-item {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .info-label {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .info-value {
+            color: #40e0d0;
+            font-weight: bold;
+        }
+        
+        .title {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+        }
+        
+        .title h1 {
+            font-size: 2.5em;
+            font-weight: 300;
+            margin-bottom: 5px;
+            background: linear-gradient(90deg, #40e0d0, #9370db);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .title p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1em;
+        }
+        
+        .file-input-container {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        
+        .file-input-container input[type=file] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            text-align: center;
+            display: none;
+        }
+        
+        .loading-spinner {
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top: 5px solid #40e0d0;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(64, 224, 208, 0.2);
+            border: 1px solid rgba(64, 224, 208, 0.5);
+            padding: 15px 25px;
+            border-radius: 50px;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .notification.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div class="title">
+        <h1>Quantum Audio Visualizer</h1>
+        <p>Real-time 3D audio visualization with WebGL</p>
+    </div>
+    
+    <div class="info-panel">
+        <div class="info-item">
+            <span class="info-label">FPS:</span>
+            <span class="info-value" id="fps">60</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Particles:</span>
+            <span class="info-value" id="particles">0</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Frequency:</span>
+            <span class="info-value" id="frequency">0</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Amplitude:</span>
+            <span class="info-value" id="amplitude">0</span>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button class="control-btn" id="play-btn">
+            <span>▶</span> Play
+        </button>
+        
+        <div class="file-input-container">
+            <button class="control-btn">
+                <span>📁</span> Load Audio
+            </button>
+            <input type="file" id="audio-file" accept="audio/*">
+        </div>
+        
+        <div class="slider-container">
+            <span>Sensitivity</span>
+            <input type="range" class="slider" id="sensitivity" min="0.1" max="2" step="0.1" value="1">
+        </div>
+        
+        <div class="slider-container">
+            <span>Particles</span>
+            <input type="range" class="slider" id="particle-count" min="100" max="5000" step="100" value="1000">
+        </div>
+        
+        <button class="control-btn" id="color-mode">
+            <span>🎨</span> Color Mode
+        </button>
+        
+        <button class="control-btn" id="shape-mode">
+            <span>⬟</span> Shape Mode
+        </button>
+    </div>
+    
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+        <p>Loading audio...</p>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script>
+        // Global variables
+        let scene, camera, renderer, analyser, audioContext, source, dataArray, bufferLength;
+        let particles, particleSystem, geometry, material;
+        let isPlaying = false;
+        let colorMode = 0; // 0: frequency, 1: amplitude, 2: mixed
+        let shapeMode = 0; // 0: sphere, 1: cube, 2: torus
+        let sensitivity = 1.0;
+        let targetParticleCount = 1000;
+        let clock = new THREE.Clock();
+        let fps = 0;
+        let frameCount = 0;
+        let lastTime = performance.now();
+        
+        // Initialize Three.js scene
+        function initScene() {
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.0008);
+            
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 50;
+            
+            // Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            // Add ambient light
+            const ambientLight = new THREE.AmbientLight(0x333333);
+            scene.add(ambientLight);
+            
+            // Add directional light
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(1, 1, 1);
+            scene.add(directionalLight);
+            
+            // Create particle system
+            createParticleSystem(targetParticleCount);
+            
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize, false);
+        }
+        
+        // Create particle system
+        function createParticleSystem(count) {
+            // Remove existing particle system if it exists
+            if (particleSystem) {
+                scene.remove(particleSystem);
+                geometry.dispose();
+                material.dispose();
+            }
+            
+            // Create geometry
+            geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+            const sizes = new Float32Array(count);
+            
+            // Initialize particles
+            for (let i = 0; i < count; i++) {
+                const i3 = i * 3;
+                
+                // Position
+                positions[i3] = (Math.random() - 0.5) * 100;
+                positions[i3 + 1] = (Math.random() - 0.5) * 100;
+                positions[i3 + 2] = (Math.random() - 0.5) * 100;
+                
+                // Color
+                colors[i3] = Math.random();
+                colors[i3 + 1] = Math.random();
+                colors[i3 + 2] = Math.random();
+                
+                // Size
+                sizes[i] = Math.random() * 5 + 1;
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+            
+            // Create material
+            material = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0 },
+                    amplitude: { value: 0 },
+                    frequency: { value: 0 }
+                },
+                vertexShader: `
+                    attribute float size;
+                    attribute vec3 color;
+                    varying vec3 vColor;
+                    uniform float time;
+                    uniform float amplitude;
+                    uniform float frequency;
+                    
+                    void main() {
+                        vColor = color;
+                        vec3 pos = position;
+                        
+                        // Apply wave motion based on audio
+                        float wave = sin(pos.x * 0.1 + time) * amplitude * 5.0;
+                        pos.y += wave;
+                        
+                        // Apply rotation
+                        float angle = time * 0.2;
+                        float s = sin(angle);
+                        float c = cos(angle);
+                        mat2 rotation = mat2(c, -s, s, c);
+                        pos.xz = rotation * pos.xz;
+                        
+                        vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                        gl_PointSize = size * (300.0 / -mvPosition.z) * (1.0 + amplitude);
+                        gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vColor;
+                    uniform float amplitude;
+                    uniform float frequency;
+                    
+                    void main() {
+                        // Create circular particles
+                        vec2 center = gl_PointCoord - vec2(0.5);
+                        float distance = length(center);
+                        if (distance > 0.5) discard;
+                        
+                        // Apply glow effect
+                        float alpha = 1.0 - smoothstep(0.0, 0.5, distance);
+                        
+                        // Mix colors based on audio
+                        vec3 color = mix(vColor, vec3(0.25, 0.88, 0.82), amplitude);
+                        color = mix(color, vec3(0.58, 0.44, 0.86), frequency);
+                        
+                        gl_FragColor = vec4(color, alpha);
+                    }
+                `,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                vertexColors: true
+            });
+            
+            // Create particle system
+            particleSystem = new THREE.Points(geometry, material);
+            scene.add(particleSystem);
+            
+            // Update particle count display
+            document.getElementById('particles').textContent = count;
+        }
+        
+        // Initialize audio
+        function initAudio() {
+            try {
+                // Create audio context
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Create analyser
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                
+                // Create default audio source (oscillator)
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(analyser);
+                analyser.connect(audioContext.destination);
+                
+                source = {
+                    start: () => oscillator.start(),
+                    stop: () => oscillator.stop(),
+                    connect: (node) => oscillator.connect(node)
+                };
+                
+                showNotification('Audio initialized with default oscillator');
+            } catch (error) {
+                console.error('Error initializing audio:', error);
+                showNotification('Error initializing audio: ' + error.message);
+            }
+        }
+        
+        // Load audio file
+        function loadAudioFile(file) {
+            const loading = document.getElementById('loading');
+            loading.style.display = 'block';
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    // Stop current audio if playing
+                    if (isPlaying) {
+                        togglePlay();
+                    }
+                    
+                    // Decode audio data
+                    audioContext.decodeAudioData(e.target.result, function(buffer) {
+                        // Create new audio source
+                        if (source) {
+                            source.stop();
+                        }
+                        
+                        source = audioContext.createBufferSource();
+                        source.buffer = buffer;
+                        source.loop = true;
+                        source.connect(analyser);
+                        analyser.connect(audioContext.destination);
+                        
+                        loading.style.display = 'none';
+                        showNotification('Audio file loaded successfully');
+                    }, function(error) {
+                        loading.style.display = 'none';
+                        console.error('Error decoding audio data:', error);
+                        showNotification('Error decoding audio file');
+                    });
+                } catch (error) {
+                    loading.style.display = 'none';
+                    console.error('Error loading audio file:', error);
+                    showNotification('Error loading audio file: ' + error.message);
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+        
+        // Toggle play/pause
+        function togglePlay() {
+            if (!audioContext) {
+                initAudio();
+            }
+            
+            if (isPlaying) {
+                if (source) {
+                    source.stop();
+                }
+                isPlaying = false;
+                document.getElementById('play-btn').innerHTML = '<span>▶</span> Play';
+                document.getElementById('play-btn').classList.remove('active');
+            } else {
+                if (source) {
+                    source.start();
+                }
+                isPlaying = true;
+                document.getElementById('play-btn').innerHTML = '<span>⏸</span> Pause';
+                document.getElementById('play-btn').classList.add('active');
+            }
+        }
+        
+        // Update visualization
+        function updateVisualization() {
+            if (!analyser || !isPlaying) return;
+            
+            // Get frequency data
+            analyser.getByteFrequencyData(dataArray);
+            
+            // Calculate average amplitude and frequency
+            let sum = 0;
+            let maxFreq = 0;
+            let maxFreqValue = 0;
+            
+            for (let i = 0; i < bufferLength; i++) {
+                sum += dataArray[i];
+                if (dataArray[i] > maxFreqValue) {
+                    maxFreqValue = dataArray[i];
+                    maxFreq = i;
+                }
+            }
+            
+            const avgAmplitude = sum / bufferLength / 128.0;
+            const normalizedFreq = maxFreq / bufferLength;
+            
+            // Apply sensitivity
+            const amplitude = avgAmplitude * sensitivity;
+            const frequency = normalizedFreq * sensitivity;
+            
+            // Update shader uniforms
+            if (material && material.uniforms) {
+                material.uniforms.amplitude.value = amplitude;
+                material.uniforms.frequency.value = frequency;
+                material.uniforms.time.value = clock.getElapsedTime();
+            }
+            
+            // Update info panel
+            document.getElementById('amplitude').textContent = amplitude.toFixed(2);
+            document.getElementById('frequency').textContent = (frequency * 22050).toFixed(0) + ' Hz';
+            
+            // Update particle colors based on color mode
+            if (geometry && geometry.attributes.color) {
+                const colors = geometry.attributes.color.array;
+                
+                for (let i = 0; i < targetParticleCount; i++) {
+                    const i3 = i * 3;
+                    
+                    switch (colorMode) {
+                        case 0: // Frequency-based
+                            colors[i3] = frequency;
+                            colors[i3 + 1] = 0.5;
+                            colors[i3 + 2] = 1.0 - frequency;
+                            break;
+                        case 1: // Amplitude-based
+                            colors[i3] = amplitude;
+                            colors[i3 + 1] = 1.0 - amplitude;
+                            colors[i3 + 2] = 0.5;
+                            break;
+                        case 2: // Mixed
+                            colors[i3] = frequency;
+                            colors[i3 + 1] = amplitude;
+                            colors[i3 + 2] = (frequency + amplitude) / 2;
+                            break;
+                    }
+                }
+                
+                geometry.attributes.color.needsUpdate = true;
+            }
+            
+            // Rotate camera
+            const time = clock.getElapsedTime();
+            camera.position.x = Math.sin(time * 0.1) * 50;
+            camera.position.z = Math.cos(time * 0.1) * 50;
+            camera.lookAt(scene.position);
+            
+            // Update FPS
+            frameCount++;
+            const currentTime = performance.now();
+            if (currentTime >= lastTime + 1000) {
+                fps = Math.round((frameCount * 1000) / (currentTime - lastTime));
+                document.getElementById('fps').textContent = fps;
+                frameCount = 0;
+                lastTime = currentTime;
+            }
+        }
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            updateVisualization();
+            renderer.render(scene, camera);
+        }
+        
+        // Handle window resize
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // Show notification
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Event listeners
+        document.getElementById('play-btn').addEventListener('click', togglePlay);
+        
+        document.getElementById('audio-file').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                loadAudioFile(e.target.files[0]);
+            }
+        });
+        
+        document.getElementById('sensitivity').addEventListener('input', function(e) {
+            sensitivity = parseFloat(e.target.value);
+        });
+        
+        document.getElementById('particle-count').addEventListener('input', function(e) {
+            targetParticleCount = parseInt(e.target.value);
+            createParticleSystem(targetParticleCount);
+        });
+        
+        document.getElementById('color-mode').addEventListener('click', function() {
+            colorMode = (colorMode + 1) % 3;
+            const modes = ['Frequency-based', 'Amplitude-based', 'Mixed'];
+            showNotification('Color mode: ' + modes[colorMode]);
+        });
+        
+        document.getElementById('shape-mode').addEventListener('click', function() {
+            shapeMode = (shapeMode + 1) % 3;
+            const modes = ['Sphere', 'Cube', 'Torus'];
+            showNotification('Shape mode: ' + modes[shapeMode]);
+            
+            // Reorganize particles based on shape mode
+            if (geometry && geometry.attributes.position) {
+                const positions = geometry.attributes.position.array;
+                
+                for (let i = 0; i < targetParticleCount; i++) {
+                    const i3 = i * 3;
+                    const phi = Math.acos(-1 + (2 * i) / targetParticleCount);
+                    const theta = Math.sqrt(targetParticleCount * Math.PI) * phi;
+                    
+                    switch (shapeMode) {
+                        case 0: // Sphere
+                            positions[i3] = 30 * Math.cos(theta) * Math.sin(phi);
+                            positions[i3 + 1] = 30 * Math.sin(theta) * Math.sin(phi);
+                            positions[i3 + 2] = 30 * Math.cos(phi);
+                            break;
+                        case 1: // Cube
+                            positions[i3] = (Math.random() - 0.5) * 60;
+                            positions[i3 + 1] = (Math.random() - 0.5) * 60;
+                            positions[i3 + 2] = (Math.random() - 0.5) * 60;
+                            break;
+                        case 2: // Torus
+                            const radius = 30;
+                            const tube = 10;
+                            const u = (i / targetParticleCount) * Math.PI * 2;
+                            const v = ((i / targetParticleCount) * 10) % (Math.PI * 2);
+                            positions[i3] = (radius + tube * Math.cos(v)) * Math.cos(u);
+                            positions[i3 + 1] = (radius + tube * Math.cos(v)) * Math.sin(u);
+                            positions[i3 + 2] = tube * Math.sin(v);
+                            break;
+                    }
+                }
+                
+                geometry.attributes.position.needsUpdate = true;
+            }
+        });
+        
+        // Initialize and start
+        initScene();
+        animate();
+        
+        // Initialize audio on first user interaction
+        document.addEventListener('click', function initAudioOnClick() {
+            if (!audioContext) {
+                initAudio();
+            }
+            document.removeEventListener('click', initAudioOnClick);
+        }, { once: true });
+    </script>
+</body>
+</html>
